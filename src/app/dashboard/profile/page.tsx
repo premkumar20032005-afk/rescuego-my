@@ -35,11 +35,29 @@ export default async function ProfilePage() {
             <p className="font-semibold">{profile?.phone}</p>
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-500">Email Address</p>
-            <p className="font-semibold">{user.email}</p>
+            <p className="text-sm font-medium text-slate-500">Role</p>
+            <p className="font-semibold capitalize">{profile?.role}</p>
           </div>
           
-          <Button variant="outline" className="mt-4">Edit Profile</Button>
+          <div className="flex gap-4 mt-4">
+            <Button variant="outline">Edit Profile</Button>
+            {profile?.role === 'customer' && (
+              <form action={async () => {
+                "use server";
+                const { upgradeToProvider } = await import("@/app/actions/provider");
+                await upgradeToProvider();
+              }}>
+                <Button type="submit" variant="default" className="bg-amber-500 hover:bg-amber-600">Become a Provider</Button>
+              </form>
+            )}
+            {profile?.role === 'provider' && (
+              <a href="/provider">
+                <Button variant="default" className="bg-emerald-600 hover:bg-emerald-700">
+                  Go to Provider Dashboard
+                </Button>
+              </a>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
