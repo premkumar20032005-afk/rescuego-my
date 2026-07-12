@@ -31,7 +31,28 @@ export async function updateSession(request: NextRequest) {
   );
 
   // refreshing the auth token
-  await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Protect routes
+  const protectedPaths = ['/dashboard', '/request', '/profile', '/provider'];
+  const isProtectedPath = protectedPaths.some(path => request.nextUrl.pathname.startsWith(path));
+
+  if (isProtectedPath && !user) {
+    const redirectUrl = new URL('/login', request.url);
+    redirectUrl.searchParams.set('redirect', request.nextUrl.pathname);
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  // If user is logged in and trying to access auth pages, redirect to dashboard
+  const authPaths = ['/login', '/signup', '/forgot-password', '/reset-password'];
+  const isAuthPath = authPaths.some(path => request.nextUrl.pathname.startsWith(path));
+
+  if (isAuthPath && user) {
+    const redirectPath = request.nextUrl.searchParams.get('redirect') || '/dashboard';
+    // Validate redirect path to prevent open redirect
+    const safeRedirect = redirectPath.startsWith('/') ? redirectPath : '/dashboard';
+    return NextResponse.redirect(new URL(safeRedirect, request.url));
+  }
 
   return supabaseResponse;
 }

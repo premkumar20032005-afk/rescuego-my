@@ -74,6 +74,7 @@ export async function upgradeToProvider() {
 
   if (!user) return { error: "Unauthorized" };
 
+  // @ts-ignore
   const { error } = await supabase
     .from("profiles")
     // @ts-ignore
@@ -86,5 +87,32 @@ export async function upgradeToProvider() {
   }
 
   revalidatePath("/dashboard/profile");
+  return { success: true };
+}
+
+export async function submitProviderApplication(formData: FormData) {
+  const supabase = await createClient();
+  const name = formData.get("name") as string;
+  const phone = formData.get("phone") as string;
+  const serviceType = formData.get("serviceType") as string;
+  const city = formData.get("city") as string;
+  
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const { error } = await supabase
+    .from("provider_applications")
+    .insert({
+      name,
+      phone,
+      service_type: serviceType,
+      city,
+      user_id: user?.id || null
+    } as any);
+
+  if (error) {
+    console.error("Error submitting application:", error);
+    return { error: error.message };
+  }
+
   return { success: true };
 }

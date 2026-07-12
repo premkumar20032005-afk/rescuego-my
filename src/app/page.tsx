@@ -25,12 +25,12 @@ const staggerContainer: any = {
 };
 
 const services = [
-  { title: "Towing", icon: Truck, desc: "Fast and safe towing to your preferred workshop.", color: "bg-blue-100 text-blue-600" },
-  { title: "Battery Jumpstart", icon: Battery, desc: "Quick jumpstarts or battery replacements on the spot.", color: "bg-amber-100 text-amber-600" },
-  { title: "Tyre Replacement", icon: Wrench, desc: "Flat tyre? We'll change it or patch it up.", color: "bg-slate-100 text-slate-600" },
-  { title: "Fuel Delivery", icon: Droplets, desc: "Run out of gas? We'll deliver enough to get you to a station.", color: "bg-green-100 text-green-600" },
-  { title: "Lockout Service", icon: Key, desc: "Locked your keys in the car? We can help you get back in.", color: "bg-purple-100 text-purple-600" },
-  { title: "Routine Servicing", icon: Settings, desc: "Mobile oil change and basic maintenance.", color: "bg-rose-100 text-rose-600" },
+  { slug: "towing", title: "Towing", icon: Truck, desc: "Fast and safe towing to your preferred workshop.", color: "bg-blue-100 text-blue-600" },
+  { slug: "battery", title: "Battery Jumpstart", icon: Battery, desc: "Quick jumpstarts or battery replacements on the spot.", color: "bg-amber-100 text-amber-600" },
+  { slug: "tyre", title: "Tyre Replacement", icon: Wrench, desc: "Flat tyre? We'll change it or patch it up.", color: "bg-slate-100 text-slate-600" },
+  { slug: "fuel", title: "Fuel Delivery", icon: Droplets, desc: "Run out of gas? We'll deliver enough to get you to a station.", color: "bg-green-100 text-green-600" },
+  { slug: "lockout", title: "Lockout Service", icon: Key, desc: "Locked your keys in the car? We can help you get back in.", color: "bg-purple-100 text-purple-600" },
+  { slug: "wash", title: "Routine Servicing", icon: Settings, desc: "Mobile oil change and basic maintenance.", color: "bg-rose-100 text-rose-600" },
 ];
 
 export default function Home() {
@@ -59,7 +59,7 @@ export default function Home() {
             </motion.p>
             
             <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-4 w-full justify-center">
-              <Link href="/login">
+              <Link href="/request">
                 <Button size="lg" className="h-14 px-8 text-lg rounded-full">
                   Request Help Now <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
@@ -90,17 +90,19 @@ export default function Home() {
           >
             {services.map((service, idx) => (
               <motion.div key={idx} variants={fadeInUp}>
-                <Card className="group h-full hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/20">
-                  <CardHeader>
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${service.color}`}>
-                      <service.icon className="w-6 h-6" />
-                    </div>
-                    <CardTitle className="text-xl">{service.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription className="text-base">{service.desc}</CardDescription>
-                  </CardContent>
-                </Card>
+                <Link href={`/services/${service.slug}`} className="block h-full cursor-pointer">
+                  <Card className="group h-full hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/20">
+                    <CardHeader>
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${service.color}`}>
+                        <service.icon className="w-6 h-6" />
+                      </div>
+                      <CardTitle className="text-xl">{service.title}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <CardDescription className="text-base">{service.desc}</CardDescription>
+                    </CardContent>
+                  </Card>
+                </Link>
               </motion.div>
             ))}
           </motion.div>
@@ -190,19 +192,19 @@ export default function Home() {
             <AccordionItem value="item-1">
               <AccordionTrigger className="text-left font-semibold">How long does it take for help to arrive?</AccordionTrigger>
               <AccordionContent className="text-slate-600 text-base">
-                On average, our service providers arrive within 30-45 minutes depending on your location and traffic conditions. You can track their location live on the app.
+                Most providers arrive within 20–45 minutes depending on your location and traffic.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-2">
               <AccordionTrigger className="text-left font-semibold">How do I pay for the service?</AccordionTrigger>
               <AccordionContent className="text-slate-600 text-base">
-                Payment is handled securely through the app using credit/debit cards or e-wallets. You will see an estimated price range before confirming, and only pay after the service is completed.
+                Pay securely in the app after service completion — card, FPX, or e-wallet.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-3">
               <AccordionTrigger className="text-left font-semibold">Are the mechanics and tow trucks verified?</AccordionTrigger>
               <AccordionContent className="text-slate-600 text-base">
-                Yes, every service provider on our platform undergoes strict background checks, vehicle inspections, and must maintain high user ratings to stay active.
+                Every provider passes identity verification and holds valid insurance before joining.
               </AccordionContent>
             </AccordionItem>
           </Accordion>
