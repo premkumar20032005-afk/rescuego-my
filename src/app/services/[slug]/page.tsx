@@ -11,8 +11,9 @@ export function generateStaticParams() {
   }));
 }
 
-export default function ServicePage({ params }: { params: { slug: string } }) {
-  const service = getServiceBySlug(params.slug);
+export default async function ServicePage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const service = getServiceBySlug(slug);
 
   if (!service) {
     notFound();
@@ -66,8 +67,8 @@ export default function ServicePage({ params }: { params: { slug: string } }) {
                 </p>
                 
                 <div className="pt-6">
-                  <Link 
-                    href="/request" 
+                  <Link
+                    href={`/request?service=${service.slug}`}
                     className={buttonVariants({ className: "w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold py-6 text-lg" })}
                   >
                     Request {service.name} Now

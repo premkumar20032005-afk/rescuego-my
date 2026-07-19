@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { submitContactMessage } from "@/app/actions/contact";
 
 const contactSchema = z.object({
   name: z.string().min(2, "Name is required"),
@@ -21,9 +22,18 @@ export function ContactForm() {
   });
 
   async function onSubmit(values: z.infer<typeof contactSchema>) {
-    // In a real app, this would submit to an API endpoint
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    console.log("Contact form submitted:", values);
+    const formData = new FormData();
+    formData.append("name", values.name);
+    formData.append("email", values.email);
+    formData.append("message", values.message);
+
+    const result = await submitContactMessage(formData);
+
+    if (result?.error) {
+      toast.error(result.error);
+      return;
+    }
+
     toast.success("Message sent successfully! We will get back to you soon.");
     reset();
   }

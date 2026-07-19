@@ -1,53 +1,96 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { ServiceCategory } from "@/lib/db/service_categories";
 import { Database } from "@/lib/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wrench, MapPin, Car, CheckCircle2, ArrowRight, ArrowLeft } from "lucide-react";
+import { Wrench, MapPin, Car, CheckCircle2, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { createServiceRequest } from "@/app/actions/requests";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { getServiceIcon } from "@/lib/icon-map";
 type Vehicle = Database["public"]["Tables"]["vehicles"]["Row"];
+
+// Dynamic import of Map to prevent SSR issues with Leaflet. Declared at module
+// scope (not inside the component) so it isn't recreated - and remounted,
+// losing its state - on every render.
+const MapComponent = dynamic(() => import("./map"), { ssr: false });
 
 export function RequestWizard({
   categories,
   vehicles,
-  userId
+  userId,
+  initialCategorySlug,
+  defaultContactPhone,
 }: {
   categories: ServiceCategory[];
   vehicles: Vehicle[];
   userId: string;
+  initialCategorySlug?: string;
+  defaultContactPhone?: string;
 }) {
-  const [step, setStep] = useState(1);
-  const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | null>(null);
+  const preselected = initialCategorySlug
+    ? categories.find((c) => c.slug === initialCategorySlug) ?? null
+    : null;
+
+  const [step, setStep] = useState(preselected ? 2 : 1);
+  const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | null>(preselected);
   const [position, setPosition] = useState<[number, number] | null>(null);
+  const [address, setAddress] = useState("");
+  const [addressTouched, setAddressTouched] = useState(false);
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [contactPhone, setContactPhone] = useState(defaultContactPhone || "");
   const [vehicleDetails, setVehicleDetails] = useState({ plate_number: "", make_model: "", description: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
-
-  // Dynamic import of Map to prevent SSR issues with Leaflet
-  const MapComponent = dynamic(() => import("./map"), { ssr: false });
 
   // Basic flow logic
   const nextStep = () => setStep(s => Math.min(4, s + 1));
   const prevStep = () => setStep(s => Math.max(1, s - 1));
 
+  // Look up a human-readable address for the dropped pin so providers get
+  // something more useful than raw coordinates; the customer can still edit
+  // or add a landmark, and manual edits are never overwritten by later pins.
+  useEffect(() => {
+    if (!position || addressTouched) return;
+
+    let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate async fetch + loading indicator, not derived state
+    setIsGeocoding(true);
+
+    fetch(`/api/geocode?lat=${position[0]}&lng=${position[1]}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled && data?.address) setAddress(data.address);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setIsGeocoding(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [position, addressTouched]);
+
   const submitRequest = async () => {
     if (!selectedCategory || !position) return;
-    
+
     setIsSubmitting(true);
-    
+
     const formData = new FormData();
     formData.append("categoryId", selectedCategory.id);
     formData.append("lat", position[0].toString());
     formData.append("lng", position[1].toString());
+    formData.append("address", address);
+    formData.append("contactPhone", contactPhone);
     formData.append("plateNumber", vehicleDetails.plate_number);
     formData.append("makeModel", vehicleDetails.make_model);
     formData.append("description", vehicleDetails.description);
@@ -121,26 +164,61 @@ export function RequestWizard({
                   <CardTitle>Select a Service</CardTitle>
                   <CardDescription>What kind of help do you need?</CardDescription>
                 </CardHeader>
-                <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {categories.map((category) => (
-                    <div 
-                      key={category.id}
-                      onClick={() => {
-                        setSelectedCategory(category);
-                        nextStep();
-                      }}
-                      className={`cursor-pointer border rounded-xl p-4 text-center transition-all duration-200 ${
-                        selectedCategory?.id === category.id 
-                          ? "border-primary bg-primary/5 ring-2 ring-primary ring-offset-2" 
-                          : "border-border hover:border-primary/50 hover:bg-slate-50"
-                      }`}
-                    >
-                      <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <Wrench className="w-6 h-6 text-primary" />
+                <CardContent className="space-y-4">
+                  {categories.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-300">
+                      <div className="bg-slate-100 p-3 rounded-full mb-3">
+                        <Wrench className="w-6 h-6 text-slate-400" />
                       </div>
-                      <h4 className="font-medium text-sm">{category.name}</h4>
+                      <h3 className="font-medium text-slate-900 mb-1">No Services Available</h3>
+                      <p className="text-sm text-slate-500 max-w-sm">
+                        There are currently no active services configured. Please contact support or check back later.
+                      </p>
                     </div>
-                  ))}
+                  ) : (
+                    <>
+                      <div className="relative">
+                        <Input
+                          placeholder="Search for a service..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-10"
+                        />
+                        <Wrench className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {categories
+                          .filter((c) => c.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                          .map((category) => {
+                            const CategoryIcon = getServiceIcon(category.icon);
+                            return (
+                              <div
+                                key={category.id}
+                                onClick={() => {
+                                  setSelectedCategory(category);
+                                  nextStep();
+                                }}
+                                className={`cursor-pointer border rounded-xl p-4 text-center transition-all duration-200 flex flex-col h-full ${
+                                  selectedCategory?.id === category.id
+                                    ? "border-primary bg-primary/5 ring-2 ring-primary ring-offset-2"
+                                    : "border-border hover:border-primary/50 hover:bg-slate-50"
+                                }`}
+                              >
+                                <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 shrink-0">
+                                  <CategoryIcon className="w-6 h-6 text-primary" />
+                                </div>
+                                <h4 className="font-medium text-sm flex-grow flex items-center justify-center">{category.name}</h4>
+                                {(category.base_price_min !== null || category.base_price_max !== null) && (
+                                  <p className="text-xs text-muted-foreground mt-2 pt-2 border-t font-medium">
+                                    RM {category.base_price_min} - RM {category.base_price_max}
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
@@ -159,16 +237,34 @@ export function RequestWizard({
                   <CardTitle>Where are you?</CardTitle>
                   <CardDescription>Pin your exact location on the map.</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
                   <div className="h-80 w-full bg-slate-100 rounded-lg overflow-hidden border border-slate-300 relative z-0">
                     <MapComponent position={position} setPosition={setPosition} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Pickup Address / Landmark</Label>
+                    <Textarea
+                      id="address"
+                      placeholder="e.g. Layby before Rawang R&R, northbound PLUS highway"
+                      rows={2}
+                      value={address}
+                      onChange={(e) => {
+                        setAddress(e.target.value);
+                        setAddressTouched(true);
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {isGeocoding
+                        ? "Detecting address from your pin..."
+                        : "We fill this in from your pin — edit it or add a landmark so the provider can find you faster."}
+                    </p>
                   </div>
                 </CardContent>
                 <CardFooter className="flex justify-between">
                   <Button variant="outline" onClick={prevStep}>
                     <ArrowLeft className="w-4 h-4 mr-2" /> Back
                   </Button>
-                  <Button onClick={nextStep} disabled={!position}>
+                  <Button onClick={nextStep} disabled={!position || !address.trim()}>
                     Continue <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </CardFooter>
@@ -186,38 +282,54 @@ export function RequestWizard({
             >
               <Card>
                 <CardHeader>
-                  <CardTitle>Vehicle Details</CardTitle>
-                  <CardDescription>Tell us about the vehicle and the problem.</CardDescription>
+                  <CardTitle>Vehicle & Contact Details</CardTitle>
+                  <CardDescription>Tell us about the vehicle, the problem, and how to reach you.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="plate_number">License Plate Number</Label>
-                      <Input 
-                        id="plate_number" 
-                        placeholder="e.g. VHA 1234" 
+                      <Input
+                        id="plate_number"
+                        placeholder="e.g. VHA 1234"
                         value={vehicleDetails.plate_number}
                         onChange={(e) => setVehicleDetails({...vehicleDetails, plate_number: e.target.value})}
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="make_model">Vehicle Make & Model</Label>
-                      <Input 
-                        id="make_model" 
-                        placeholder="e.g. Perodua Myvi" 
+                      <Input
+                        id="make_model"
+                        placeholder="e.g. Perodua Myvi"
                         value={vehicleDetails.make_model}
                         onChange={(e) => setVehicleDetails({...vehicleDetails, make_model: e.target.value})}
                       />
                     </div>
                     <div className="space-y-2">
+                      <Label htmlFor="contact_phone">Contact Number for This Request</Label>
+                      <Input
+                        id="contact_phone"
+                        type="tel"
+                        placeholder="e.g. 012-345 6789"
+                        value={contactPhone}
+                        onChange={(e) => setContactPhone(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        The provider will call this number — change it if you&apos;re not using your usual phone.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
                       <Label htmlFor="description">Describe the issue</Label>
-                      <Textarea 
-                        id="description" 
-                        placeholder="e.g. My car won't start, I think it's the battery..." 
+                      <Textarea
+                        id="description"
+                        placeholder="e.g. My car won't start, I think it's the battery..."
                         rows={4}
                         value={vehicleDetails.description}
                         onChange={(e) => setVehicleDetails({...vehicleDetails, description: e.target.value})}
                       />
+                      <p className="text-xs text-muted-foreground">
+                        The more detail you give, the better prepared your provider will be.
+                      </p>
                     </div>
                   </div>
                 </CardContent>
@@ -225,7 +337,15 @@ export function RequestWizard({
                   <Button variant="outline" onClick={prevStep}>
                     <ArrowLeft className="w-4 h-4 mr-2" /> Back
                   </Button>
-                  <Button onClick={nextStep} disabled={!vehicleDetails.plate_number || !vehicleDetails.make_model}>
+                  <Button
+                    onClick={nextStep}
+                    disabled={
+                      !vehicleDetails.plate_number ||
+                      !vehicleDetails.make_model ||
+                      !contactPhone.trim() ||
+                      !vehicleDetails.description.trim()
+                    }
+                  >
                     Review <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </CardFooter>
@@ -258,14 +378,37 @@ export function RequestWizard({
                          RM {selectedCategory?.base_price_min} - RM {selectedCategory?.base_price_max}
                        </span>
                      </div>
+                     <div className="flex justify-between border-b pb-2 gap-4">
+                       <span className="text-muted-foreground shrink-0">Location</span>
+                       <span className="font-medium text-right">{address}</span>
+                     </div>
+                     <div className="flex justify-between border-b pb-2">
+                       <span className="text-muted-foreground">Vehicle</span>
+                       <span className="font-medium">
+                         {vehicleDetails.make_model} &middot; {vehicleDetails.plate_number}
+                       </span>
+                     </div>
+                     <div className="flex justify-between border-b pb-2">
+                       <span className="text-muted-foreground">Contact Number</span>
+                       <span className="font-medium">{contactPhone}</span>
+                     </div>
+                     <div className="flex justify-between gap-4">
+                       <span className="text-muted-foreground shrink-0">Issue</span>
+                       <span className="font-medium text-right">{vehicleDetails.description}</span>
+                     </div>
                   </div>
                 </CardContent>
                 <CardFooter className="flex justify-between">
-                  <Button variant="outline" onClick={prevStep}>
+                  <Button variant="outline" onClick={prevStep} disabled={isSubmitting}>
                     <ArrowLeft className="w-4 h-4 mr-2" /> Back
                   </Button>
-                  <Button className="bg-green-600 hover:bg-green-700 text-white">
-                    Confirm Request
+                  <Button
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                    onClick={submitRequest}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                    {isSubmitting ? "Submitting..." : "Confirm Request"}
                   </Button>
                 </CardFooter>
               </Card>

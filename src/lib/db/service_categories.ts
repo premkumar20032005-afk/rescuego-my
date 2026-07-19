@@ -8,7 +8,6 @@ export async function getActiveServiceCategories(): Promise<ServiceCategory[]> {
   const { data, error } = await supabase
     .from("service_categories")
     .select("*")
-    .eq("active", true)
     .order("name");
 
   if (error) {

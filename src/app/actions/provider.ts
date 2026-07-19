@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { createNotification } from "@/lib/db/notifications";
 
 export async function acceptRequest(requestId: string) {
   const supabase = await createClient();
@@ -9,15 +10,17 @@ export async function acceptRequest(requestId: string) {
 
   if (!user) return { error: "Unauthorized" };
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("requests")
     // @ts-ignore
-    .update({ 
-      provider_id: user.id, 
+    .update({
+      provider_id: user.id,
       status: "accepted",
       accepted_at: new Date().toISOString()
     })
-    .eq("id", requestId);
+    .eq("id", requestId)
+    .select("customer_id")
+    .single() as any;
 
   if (error) {
     console.error("Error accepting request:", error);
@@ -29,12 +32,33 @@ export async function acceptRequest(requestId: string) {
     status: "accepted"
   } as any);
 
+  if (updated?.customer_id) {
+    await createNotification(
+      updated.customer_id,
+      "A provider accepted your request",
+      "They're on their way. Track progress in your request history.",
+      "/dashboard/history"
+    );
+  }
+
   revalidatePath("/provider");
   revalidatePath("/provider/active");
   return { success: true };
 }
 
-export async function updateRequestStatus(requestId: string, status: 'en_route' | 'arrived' | 'in_progress' | 'completed' | 'cancelled') {
+const STATUS_MESSAGES: Record<string, string> = {
+  en_route: "Your provider is en route.",
+  arrived: "Your provider has arrived at your location.",
+  in_progress: "Your provider has started working on your request.",
+  completed: "Your request has been marked completed. Payment is now due.",
+  cancelled: "Your request was cancelled by the provider.",
+};
+
+export async function updateRequestStatus(
+  requestId: string,
+  status: 'en_route' | 'arrived' | 'in_progress' | 'completed' | 'cancelled',
+  finalAmount?: number
+) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -43,14 +67,19 @@ export async function updateRequestStatus(requestId: string, status: 'en_route' 
   const updates: any = { status };
   if (status === "completed") {
     updates.completed_at = new Date().toISOString();
+    if (typeof finalAmount === "number" && !Number.isNaN(finalAmount) && finalAmount > 0) {
+      updates.final_amount = finalAmount;
+    }
   }
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("requests")
     // @ts-ignore
     .update(updates)
     .eq("id", requestId)
-    .eq("provider_id", user.id); // Ensure they own it
+    .eq("provider_id", user.id) // Ensure they own it
+    .select("customer_id")
+    .single() as any;
 
   if (error) {
     console.error("Error updating status:", error);
@@ -63,8 +92,13 @@ export async function updateRequestStatus(requestId: string, status: 'en_route' 
     status: status
   } as any);
 
+  if (updated?.customer_id && STATUS_MESSAGES[status]) {
+    await createNotification(updated.customer_id, "Request update", STATUS_MESSAGES[status], "/dashboard/history");
+  }
+
   revalidatePath("/provider/active");
   revalidatePath("/provider/history");
+  revalidatePath("/dashboard/history");
   return { success: true };
 }
 
@@ -96,7 +130,7 @@ export async function submitProviderApplication(formData: FormData) {
   const phone = formData.get("phone") as string;
   const serviceType = formData.get("serviceType") as string;
   const city = formData.get("city") as string;
-  
+
   const { data: { user } } = await supabase.auth.getUser();
 
   const { error } = await supabase

@@ -34,6 +34,8 @@ export function Footer() {
               <li><Link href="/services/battery" className="hover:text-primary transition-colors">Battery Jumpstart</Link></li>
               <li><Link href="/services/tyre" className="hover:text-primary transition-colors">Tyre Replacement</Link></li>
               <li><Link href="/services/fuel" className="hover:text-primary transition-colors">Fuel Delivery</Link></li>
+              <li><Link href="/services/lockout" className="hover:text-primary transition-colors">Lockout Service</Link></li>
+              <li><Link href="/services/wash" className="hover:text-primary transition-colors">Mobile Car Wash</Link></li>
             </ul>
           </div>
           

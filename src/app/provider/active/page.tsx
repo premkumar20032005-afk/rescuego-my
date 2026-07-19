@@ -79,7 +79,7 @@ export default async function ProviderActiveJobsPage() {
                       <Phone className="w-5 h-5 text-slate-400 shrink-0" />
                       <div>
                         <p className="text-sm font-medium text-slate-900">{request.profiles?.full_name}</p>
-                        <p className="text-sm text-slate-600">{request.profiles?.phone || "No phone provided"}</p>
+                        <p className="text-sm text-slate-600">{request.contact_phone || request.profiles?.phone || "No phone provided"}</p>
                       </div>
                     </div>
                   </div>

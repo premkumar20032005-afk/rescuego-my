@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { signout } from "@/app/actions/auth";
 import { getProfile } from "@/lib/db/profiles";
+import { NotificationBell } from "@/components/layout/notification-bell";
 
 export default async function DashboardLayout({
   children,
@@ -29,13 +30,14 @@ export default async function DashboardLayout({
     <div className="flex min-h-screen flex-col md:flex-row bg-slate-50">
       {/* Sidebar */}
       <aside className="w-full md:w-64 bg-white border-r flex flex-col hidden md:flex">
-        <div className="p-6 border-b">
+        <div className="p-6 border-b flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-2">
             <CarFront className="h-6 w-6 text-primary" />
             <span className="text-lg font-bold tracking-tight text-primary">RescueGO</span>
           </Link>
+          <NotificationBell userId={user.id} />
         </div>
-        
+
         <nav className="flex-1 p-4 space-y-2">
           <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-100 text-slate-700 font-medium transition-colors">
             <MapPin className="h-5 w-5" /> Request Help
@@ -75,9 +77,12 @@ export default async function DashboardLayout({
           <CarFront className="h-6 w-6 text-primary" />
           <span className="text-lg font-bold tracking-tight text-primary">RescueGO</span>
         </Link>
-        <form action={signout}>
-          <Button variant="ghost" size="sm" type="submit">Sign out</Button>
-        </form>
+        <div className="flex items-center gap-1">
+          <NotificationBell userId={user.id} />
+          <form action={signout}>
+            <Button variant="ghost" size="sm" type="submit">Sign out</Button>
+          </form>
+        </div>
       </div>
 
       {/* Main Content */}

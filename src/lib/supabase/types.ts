@@ -113,8 +113,10 @@ export type Database = {
           lat: number
           lng: number
           address_text: string
+          contact_phone: string | null
           description: string | null
           photos: Json
+          final_amount: number | null
           created_at: string
           accepted_at: string | null
           completed_at: string | null
@@ -129,8 +131,10 @@ export type Database = {
           lat: number
           lng: number
           address_text: string
+          contact_phone?: string | null
           description?: string | null
           photos?: Json
+          final_amount?: number | null
           created_at?: string
           accepted_at?: string | null
           completed_at?: string | null
@@ -145,8 +149,10 @@ export type Database = {
           lat?: number
           lng?: number
           address_text?: string
+          contact_phone?: string | null
           description?: string | null
           photos?: Json
+          final_amount?: number | null
           created_at?: string
           accepted_at?: string | null
           completed_at?: string | null
@@ -192,6 +198,125 @@ export type Database = {
           request_id?: string
           rating?: number
           comment?: string | null
+          created_at?: string
+        }
+      }
+      provider_applications: {
+        Row: {
+          id: string
+          user_id: string | null
+          name: string
+          phone: string
+          service_type: string
+          city: string
+          status: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          name: string
+          phone: string
+          service_type: string
+          city: string
+          status?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          name?: string
+          phone?: string
+          service_type?: string
+          city?: string
+          status?: string
+          created_at?: string
+        }
+      }
+      payments: {
+        Row: {
+          id: string
+          request_id: string
+          amount: number
+          currency: string
+          billplz_bill_id: string | null
+          billplz_collection_id: string | null
+          status: 'pending' | 'paid' | 'failed'
+          paid_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          request_id: string
+          amount: number
+          currency?: string
+          billplz_bill_id?: string | null
+          billplz_collection_id?: string | null
+          status?: 'pending' | 'paid' | 'failed'
+          paid_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          request_id?: string
+          amount?: number
+          currency?: string
+          billplz_bill_id?: string | null
+          billplz_collection_id?: string | null
+          status?: 'pending' | 'paid' | 'failed'
+          paid_at?: string | null
+          created_at?: string
+        }
+      }
+      notifications: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          body: string | null
+          link: string | null
+          read: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          body?: string | null
+          link?: string | null
+          read?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          body?: string | null
+          link?: string | null
+          read?: boolean
+          created_at?: string
+        }
+      }
+      contact_messages: {
+        Row: {
+          id: string
+          name: string
+          email: string
+          message: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          email: string
+          message: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          email?: string
+          message?: string
           created_at?: string
         }
       }

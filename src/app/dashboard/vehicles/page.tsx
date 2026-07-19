@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Car, Plus } from "lucide-react";
+import { Car } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { VehicleDialog } from "@/components/dashboard/vehicle-dialog";
+import { DeleteVehicleButton } from "@/components/dashboard/delete-vehicle-button";
 
 export default async function VehiclesPage() {
   const supabase = await createClient();
@@ -22,9 +24,7 @@ export default async function VehiclesPage() {
           <h1 className="text-3xl font-bold tracking-tight">My Vehicles</h1>
           <p className="text-muted-foreground">Manage vehicles associated with your account.</p>
         </div>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" /> Add Vehicle
-        </Button>
+        <VehicleDialog />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -42,8 +42,11 @@ export default async function VehiclesPage() {
                   </div>
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button variant="outline" size="sm">Edit</Button>
-                  <Button variant="outline" size="sm" className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground">Remove</Button>
+                  <VehicleDialog
+                    vehicle={vehicle}
+                    trigger={<Button variant="outline" size="sm">Edit</Button>}
+                  />
+                  <DeleteVehicleButton vehicleId={vehicle.id} />
                 </div>
               </CardContent>
             </Card>
@@ -53,7 +56,7 @@ export default async function VehiclesPage() {
             <CardContent className="p-12 text-center text-muted-foreground flex flex-col items-center justify-center">
               <Car className="w-12 h-12 mb-4 text-slate-300" />
               <p>You haven&apos;t added any vehicles yet.</p>
-              <Button className="mt-4" variant="outline">Add Your First Vehicle</Button>
+              <VehicleDialog trigger={<Button className="mt-4" variant="outline">Add Your First Vehicle</Button>} />
             </CardContent>
           </Card>
         )}

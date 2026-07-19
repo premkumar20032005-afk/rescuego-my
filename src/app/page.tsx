@@ -162,7 +162,7 @@ export default function Home() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               { name: "Ahmad K.", role: "Customer", quote: "My battery died in a basement parking. RescueGO had someone there in 20 minutes!" },
-              { name: "Sarah L.", role: "Customer", quote: "Very professional towing service. I could track the truck live on the map. Highly recommended." },
+              { name: "Sarah L.", role: "Customer", quote: "Very professional towing service. I got instant status updates the whole way - accepted, en route, arrived. Highly recommended." },
               { name: "David Wong", role: "Customer", quote: "Transparent pricing. I knew exactly how much the tyre replacement would cost before booking." },
             ].map((testimonial, idx) => (
               <Card key={idx} className="bg-slate-50 border-none shadow-sm">

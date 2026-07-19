@@ -5,6 +5,7 @@ import { formatDistanceToNow } from "date-fns";
 import { MapPin, Car, Clock } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { RequestActions } from "@/components/dashboard/request-actions";
 
 export default async function RequestHistoryPage() {
   const supabase = await createClient();
@@ -21,6 +22,18 @@ export default async function RequestHistoryPage() {
     `)
     .eq("customer_id", user.id)
     .order("created_at", { ascending: false }) as any;
+
+  const requestIds = (requests || []).map((r: any) => r.id);
+
+  const { data: payments } = requestIds.length
+    ? await supabase.from("payments").select("request_id, status").in("request_id", requestIds) as any
+    : { data: [] };
+  const { data: reviews } = requestIds.length
+    ? await supabase.from("reviews").select("request_id, rating, comment").in("request_id", requestIds) as any
+    : { data: [] };
+
+  const paymentByRequest = new Map((payments || []).map((p: any) => [p.request_id, p.status]));
+  const reviewByRequest = new Map((reviews || []).map((r: any) => [r.request_id, r]));
 
   return (
     <div className="space-y-6">
@@ -71,11 +84,12 @@ export default async function RequestHistoryPage() {
                       <p className="text-sm text-muted-foreground">Provider</p>
                       <p className="font-medium">{request.provider_id ? "Assigned" : "Waiting for provider..."}</p>
                     </div>
-                    {request.status === 'pending' && (
-                      <Button variant="outline" size="sm" className="mt-4 text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground">
-                        Cancel Request
-                      </Button>
-                    )}
+                    <RequestActions
+                      requestId={request.id}
+                      status={request.status}
+                      paymentStatus={(paymentByRequest.get(request.id) as any) || "none"}
+                      review={reviewByRequest.get(request.id) || null}
+                    />
                   </div>
                 </div>
               </CardContent>

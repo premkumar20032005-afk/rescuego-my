@@ -71,8 +71,8 @@ export default async function ProviderDashboardPage() {
                   <div className="flex gap-3">
                     <Phone className="w-5 h-5 text-slate-400 shrink-0" />
                     <div>
-                      <p className="text-sm font-medium text-slate-900">Customer</p>
-                      <p className="text-xs text-slate-500">{request.profiles?.full_name}</p>
+                      <p className="text-sm font-medium text-slate-900">{request.profiles?.full_name}</p>
+                      <p className="text-xs text-slate-500">{request.contact_phone || request.profiles?.phone || "No phone provided"}</p>
                     </div>
                   </div>
                   

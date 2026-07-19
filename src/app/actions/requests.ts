@@ -14,11 +14,13 @@ export async function createServiceRequest(formData: FormData) {
   const categoryId = formData.get("categoryId") as string;
   const lat = parseFloat(formData.get("lat") as string);
   const lng = parseFloat(formData.get("lng") as string);
+  const addressText = (formData.get("address") as string || "").trim();
+  const contactPhone = (formData.get("contactPhone") as string || "").trim();
   const plateNumber = formData.get("plateNumber") as string;
   const makeModel = formData.get("makeModel") as string;
-  const description = formData.get("description") as string;
-  
-  if (!categoryId || isNaN(lat) || isNaN(lng) || !plateNumber || !makeModel) {
+  const description = (formData.get("description") as string || "").trim();
+
+  if (!categoryId || isNaN(lat) || isNaN(lng) || !plateNumber || !makeModel || !contactPhone || !description) {
     return { error: "Missing required fields" };
   }
 
@@ -66,7 +68,8 @@ export async function createServiceRequest(formData: FormData) {
       vehicle_id: vehicleId,
       lat: lat,
       lng: lng,
-      address_text: "Pinned Location",
+      address_text: addressText || `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+      contact_phone: contactPhone,
       description: description,
       status: "pending"
     } as any)
@@ -80,4 +83,29 @@ export async function createServiceRequest(formData: FormData) {
 
   revalidatePath("/dashboard/history");
   return { success: true, data: request };
+}
+
+export async function cancelRequest(requestId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "You must be logged in to cancel a request" };
+  }
+
+  const { error } = await supabase
+    .from("requests")
+    // @ts-ignore
+    .update({ status: "cancelled" })
+    .eq("id", requestId)
+    .eq("customer_id", user.id)
+    .eq("status", "pending");
+
+  if (error) {
+    console.error("Error cancelling request:", error);
+    return { error: error.message };
+  }
+
+  revalidatePath("/dashboard/history");
+  return { success: true };
 }

@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getProfile } from "@/lib/db/profiles";
+import { EditProfileDialog } from "@/components/dashboard/edit-profile-dialog";
+import Link from "next/link";
 
 export default async function ProfilePage() {
   const supabase = await createClient();
@@ -40,7 +42,7 @@ export default async function ProfilePage() {
           </div>
           
           <div className="flex gap-4 mt-4">
-            <Button variant="outline">Edit Profile</Button>
+            <EditProfileDialog fullName={profile?.full_name ?? ""} phone={profile?.phone ?? null} />
             {profile?.role === 'customer' && (
               <form action={async () => {
                 "use server";
@@ -51,11 +53,18 @@ export default async function ProfilePage() {
               </form>
             )}
             {profile?.role === 'provider' && (
-              <a href="/provider">
+              <Link href="/provider">
                 <Button variant="default" className="bg-emerald-600 hover:bg-emerald-700">
                   Go to Provider Dashboard
                 </Button>
-              </a>
+              </Link>
+            )}
+            {profile?.role === 'admin' && (
+              <Link href="/admin">
+                <Button variant="default" className="bg-slate-900 hover:bg-slate-800">
+                  Go to Admin Panel
+                </Button>
+              </Link>
             )}
           </div>
         </CardContent>
