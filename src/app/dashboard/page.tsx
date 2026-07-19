@@ -25,7 +25,9 @@ export default async function DashboardOverviewPage() {
     .order("created_at", { ascending: false })
     .limit(3) as any;
     
-  const activeRequestCount = recentRequests?.filter((r: any) => !['completed', 'cancelled'].includes(r.status)).length || 0;
+  const activeRequestCount = Array.isArray(recentRequests) 
+    ? recentRequests.filter((r: any) => !['completed', 'cancelled'].includes(r.status)).length 
+    : 0;
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -120,7 +122,7 @@ export default async function DashboardOverviewPage() {
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              {recentRequests && recentRequests.length > 0 ? (
+              {Array.isArray(recentRequests) && recentRequests.length > 0 ? (
                 <div className="divide-y">
                   {recentRequests.map((request: any) => (
                     <div key={request.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
