@@ -32,8 +32,8 @@ export default async function RequestHistoryPage() {
     ? await supabase.from("reviews").select("request_id, rating, comment").in("request_id", requestIds) as any
     : { data: [] };
 
-  const paymentByRequest = new Map((payments || []).map((p: any) => [p.request_id, p.status]));
-  const reviewByRequest = new Map((reviews || []).map((r: any) => [r.request_id, r]));
+  const paymentByRequest = new Map<string, string>((payments || []).map((p: any) => [p.request_id, p.status]));
+  const reviewByRequest = new Map<string, any>((reviews || []).map((r: any) => [r.request_id, r]));
 
   return (
     <div className="space-y-6">

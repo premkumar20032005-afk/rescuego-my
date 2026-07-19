@@ -25,29 +25,28 @@ export async function POST(request: NextRequest) {
 
   const admin = createAdminClient();
 
-  const { data: payment } = await admin
+  const { data: payment } = await (admin
     .from("payments")
     .select("id, request_id")
     .eq("billplz_bill_id", billId)
-    .maybeSingle();
+    .maybeSingle() as any);
 
   if (!payment) {
     return NextResponse.json({ error: "Payment not found" }, { status: 404 });
   }
 
-  await admin
-    .from("payments")
+  await (admin.from("payments") as any)
     .update({
       status: paid ? "paid" : "failed",
       paid_at: paid ? new Date().toISOString() : null,
     })
     .eq("id", payment.id);
 
-  const { data: req } = await admin
+  const { data: req } = await (admin
     .from("requests")
     .select("customer_id")
     .eq("id", payment.request_id)
-    .maybeSingle();
+    .maybeSingle() as any);
 
   if (req?.customer_id) {
     await createNotification(

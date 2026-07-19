@@ -31,7 +31,7 @@ export default async function AdminRequestsPage({
   const { data: customers } = customerIds.length
     ? await supabase.from("profiles").select("id, full_name").in("id", customerIds as string[]) as any
     : { data: [] };
-  const customerNameById = new Map((customers || []).map((c: any) => [c.id, c.full_name]));
+  const customerNameById = new Map<string, string>((customers || []).map((c: any) => [c.id, c.full_name]));
 
   return (
     <div className="space-y-6">
